@@ -1,0 +1,59 @@
+--- hw/mini2440.c	2009-05-20 18:28:02 +0800
++++ hw/mini2440.c	2010-01-29 00:56:24 +0800
+@@ -258,6 +258,9 @@
+     struct mini2440_board_s *s = (struct mini2440_board_s *) opaque;
+     uint32_t image_size;
+ 
++#if 1
++    s->cpu->env->regs[15] = S3C_RAM_BASE;
++#else
+ 	/*
+ 	 * Normally we would load 4 KB of nand to SRAM and jump there, but
+ 	 * it is not working perfectly as expected, so we cheat and load
+@@ -298,6 +301,7 @@
+ 	   		mini2440_printf("loaded %s (size %x)\n", s->kernel, image_size);
+ 	    }
+ 	}
++#endif	
+ }
+ 
+ /* Typical touchscreen calibration values */
+@@ -328,7 +332,7 @@
+     	mini2440_printf("This platform requires an ARM920T core\n");
+         exit(2);
+     }
+-    s->cpu = s3c24xx_init(S3C_CPU_2440, 12000000 /* 12 mhz */, s->ram, S3C_SRAM_BASE_NANDBOOT, s->mmc);
++    s->cpu = s3c24xx_init(S3C_CPU_2440, 12000000 /* 12 mhz */, s->ram, S3C_SRAM_BASE_NORBOOT, s->mmc);
+ 
+     /* Setup peripherals */
+     mini2440_gpio_setup(s);
+@@ -353,6 +357,11 @@
+     return s;
+ }
+ 
++static struct arm_boot_info mini2440_binfo = {
++    .loader_start = S3C_RAM_BASE,
++    .ram_size = 0x04000000,
++    .board_id = 0x050,
++};
+ 
+ static void mini2440_init(ram_addr_t ram_size,
+         const char *boot_device,
+@@ -371,9 +380,16 @@
+     mini = mini2440_init_common(ram_size,
+                     kernel_filename, cpu_model, sd);
+ 
+-	mini->nand = nand_init(NAND_MFR_SAMSUNG, 0x76);
++    mini->nand = nand_init(NAND_MFR_SAMSUNG, 0x76);
+     mini->cpu->nand->reg(mini->cpu->nand, mini->nand);
+ 
++	/* Load the kernel.  */
++    if (kernel_filename) {
++        mini2440_binfo.kernel_filename = kernel_filename;
++        mini2440_binfo.kernel_cmdline = kernel_cmdline;
++        mini2440_binfo.initrd_filename = initrd_filename;
++        arm_load_kernel(mini->cpu->env, &mini2440_binfo);
++    }	
+     mini2440_reset(mini);
+ }
+ 

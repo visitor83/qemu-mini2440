@@ -1,0 +1,31 @@
+--- hw/s3c24xx_lcd.c	2009-05-20 18:28:02 +0800
++++ hw/s3c24xx_lcd.c	2010-01-28 18:44:50 +0800
+@@ -432,7 +432,7 @@
+             dirty[1] = cpu_physical_memory_get_dirty(x, VGA_DIRTY_FLAG);
+             dirty[0] |= dirty[1];
+         }
+-        if (dirty[0] || s->invalidate) {
++        // if (dirty[0] || s->invalidate) {
+             s->fn(s->palette, dest, src, s->width, s->dest_width);
+             maxy = y;
+             end = new_addr;
+@@ -440,7 +440,7 @@
+                 miny = y;
+                 start = addr;
+             }
+-        }
++        // }
+         addr = new_addr;
+         dirty[0] = dirty[1];
+         src += src_width;
+@@ -452,7 +452,9 @@
+         cpu_physical_memory_reset_dirty(start, end, VGA_DIRTY_FLAG);
+     s->srcpnd |= (1 << 1);			/* INT_FrSyn */
+     s3c_lcd_update(s);
+-    dpy_update(s->ds, 0, miny, s->width, maxy);
++	/* fix qemu/2410 lcd bug */
++	dpy_update(s->ds, 0, 0, 240, 320);
++    // dpy_update(s->ds, 0, miny, s->width, maxy);
+ }
+ 
+ static void s3c_invalidate_display(void *opaque)
